@@ -10,7 +10,7 @@ class AppInfo {
     var title:String = ""
     var link:String = ""
     var iconurl:Array<String> = arrayOf("", "")
-    var icon:Drawable? = null
+    //var icon:Drawable? = null
     var desc:String = ""
     var company:String = ""
     var company_link:String = ""
