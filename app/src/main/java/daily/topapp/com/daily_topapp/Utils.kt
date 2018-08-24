@@ -13,3 +13,12 @@ fun getFormatDate():String {
 
     return name;
 }
+
+
+fun getPackageName(url:String):String {
+    var pos  = url?.indexOf("id=")
+    if (pos < 0 || (pos + 3) > url.length - 1) return ""
+
+    return url.substring(pos + 3, url.length)
+}
+

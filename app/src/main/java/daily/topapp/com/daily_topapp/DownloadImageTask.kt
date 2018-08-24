@@ -17,6 +17,7 @@ class DownloadImageTask(l:Int) : AsyncTask<String, Void, Int>() {
     var listApp:MutableList<AppInfo> = mutableListOf()
     var totalCount = 0
     var totalCountLoad = 0
+    var db:SaveAppsToDb? = null
 
     override fun doInBackground(vararg  path: String): Int {
         val client = OkHttpClient()
@@ -44,6 +45,8 @@ class DownloadImageTask(l:Int) : AsyncTask<String, Void, Int>() {
                         bmp?.compress(Bitmap.CompressFormat.JPEG, 30, fileOut)
                         fileOut.close()
                         println("task:download over ${totalCount++}:${totalCountLoad++} ${i.rank} ${i.title}: $title")
+
+                        db?.updateAppsIcon(i, file)
                     }
                 }
                 else {

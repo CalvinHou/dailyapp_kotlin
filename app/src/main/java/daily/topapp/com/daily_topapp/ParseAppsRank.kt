@@ -17,6 +17,7 @@ import java.util.*
 import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 
 /**
  * Created by houhuihua on 2018/8/23.
@@ -51,7 +52,6 @@ class ParseAppsRank{
         for (i in topCategoryNameLists) {
             topCategoryLists.add(getTop(i))
             topCategoryLists.add(getTopNew(i))
-            break
         }
         return topCategoryLists
     }
@@ -74,6 +74,7 @@ class ParseAppsRank{
         val client:OkHttpClient = OkHttpClient()
         val request:Request = Request.Builder().url(url).build()
         val response:Response = client?.newCall(request).execute()
+        println(url)
 
         return response?.body()!!.string()
     }
@@ -214,12 +215,12 @@ class ParseAppsRank{
                                     var fileOut = FileOutputStream(file)
                                     bitmap?.compress(Bitmap.CompressFormat.JPEG, 30, fileOut)
                                     fileOut.close()
-                                    println("download over ${totalCount}:${totalCountLoad++} ${i.rank} ${i.title}: $title")
+                                    println("download over ${totalCount}:${totalCountLoad++} ${i.rank} ${i.title}")
                                 }
 
                                 override fun onBitmapFailed(e: Exception?, errorDrawable: Drawable?) {
                                     //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-                                    println("download failed ${totalCount}:${totalCountFailed++} ${i.rank} ${i.title}: $title")
+                                    println("download failed ${totalCount}:${totalCountFailed++} ${i.rank} ${i.title}")
                                 }
 
                                 override fun onPrepareLoad(placeHolderDrawable: Drawable?) {
@@ -229,7 +230,7 @@ class ParseAppsRank{
                             })
                 }
                 else {
-                    println("exist download ${totalCount++} ${i.rank} ${i.title}: $title")
+                    println("exist download ${totalCount++} ${i.rank} ${i.title}")
                 }
 
 
@@ -241,7 +242,7 @@ class ParseAppsRank{
 
 
     val client = OkHttpClient()
-    fun downloadIconsTask(listApp:MutableList<AppInfo>, path: String): Int {
+    fun downloadIconsTask(listApp:MutableList<AppInfo>, path: String, db:SaveAppsToDb): Int {
 
         for (i in listApp) {
             i?.run {
@@ -255,16 +256,18 @@ class ParseAppsRank{
 
                     var response: Response? = null
                     try {
-                        response = client.newCall(request).execute()
+                        response = client.newCall(request)?.execute()
                     } catch (e: IOException) {
                         e.printStackTrace()
                     }
 
-                    if (response!!.isSuccessful) {
+                    if (response?.isSuccessful == true) {
                         var bmp = BitmapFactory.decodeStream(response.body()!!.byteStream())
                         var fileOut = FileOutputStream(file)
                         bmp?.compress(Bitmap.CompressFormat.JPEG, 30, fileOut)
                         fileOut.close()
+
+                        db?.updateAppsIcon(i, file)
                         println("thread:download over ${totalCount++}:${totalCountLoad++} ${i.rank} ${i.title}: $title")
                     }
                 }
@@ -275,5 +278,42 @@ class ParseAppsRank{
         }
         return 0
     }
+
+    var clientSuspend = OkHttpClient.Builder()
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .build();
+
+    fun checkAppSuspendTask(listApp:MutableList<AppInfo>, db:SaveAppsToDb): Int {
+        //var error = "We're sorry, the requested URL was not found on this server."
+
+        for (i in listApp) {
+            i?.run {
+                val request = Request.Builder()
+                        //.url("https://play.google.com/store/apps/details?id=com.dywx.larkplayer")
+                        .url(i.link)
+                        .build()
+
+                var response: Response? = null
+                try {
+                    response = clientSuspend.newCall(request)?.execute()
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                }
+
+                if (response?.code() == 404) {
+                    i.title = "[suspend app]:${i.title}"
+                    println(i.title)
+                    db?.updateAppsTitle(i)
+                }
+                else {
+                    println("${response?.code()} len: ${response?.body()?.contentLength()}${i.rank}: ${i.title} ${i.link} ok.")
+                }
+            }
+        }
+        return 0
+    }
+
 
 }

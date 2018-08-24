@@ -15,4 +15,5 @@ class AppInfo {
     var company:String = ""
     var company_link:String = ""
 
+    var category:String = ""
 }
