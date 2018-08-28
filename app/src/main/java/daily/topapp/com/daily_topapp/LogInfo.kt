@@ -6,21 +6,23 @@ import android.os.Handler
 import android.util.Log
 import android.widget.TextView
 import java.io.File
+import java.util.*
 
 /**
  * Created by houhuihua on 2018/8/24.
  */
 
-class LogInfo(var file:String, var handler: Handler?, var textview: TextView?) {
+class LogInfo(var file:String, var handler: Handler?, var textview: TextView?, var textview2: TextView?) {
     var content:String = ""
 
     companion object {
         private var instance: LogInfo? = null
 
         @Synchronized
-        fun getInstance(file:String, handler:Handler?, textview:TextView?): LogInfo{
+        fun getInstance(file:String, handler:Handler?,
+                        textview:TextView?, textview2: TextView?): LogInfo{
             if (instance == null) {
-                instance = LogInfo(file, handler, textview)
+                instance = LogInfo(file, handler, textview, textview2)
             }
             return instance!!
         }
@@ -29,11 +31,11 @@ class LogInfo(var file:String, var handler: Handler?, var textview: TextView?) {
 
     fun print(info:String) {
         //content += "\n" + info;
-        content = info + "\n" + content
+        content = "${Date(System.currentTimeMillis())}:" + info + "\n" + content
         println(info)
 
         handler?.post(Runnable {
-            textview?.setText(content)
+            textview2?.setText(content)
             if (file?.length > 0) {
                 File(file).run {
                     appendText(content + "\n")
@@ -50,10 +52,17 @@ class LogInfo(var file:String, var handler: Handler?, var textview: TextView?) {
         })
     }
 
+    fun printonlyhandler(info:String) {
+        handler?.post(Runnable {
+            textview?.setText(info)
+        })
+    }
+
+
 }
 
 // Access property for Context
-val Context.log:LogInfo get()= LogInfo.getInstance("", null, null)
+val Context.log:LogInfo get()= LogInfo.getInstance("", null, null, null)
 
 
 

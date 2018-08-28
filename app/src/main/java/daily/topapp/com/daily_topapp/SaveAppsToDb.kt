@@ -4,8 +4,6 @@ import android.content.ContentValues
 import android.content.Context
 import org.jetbrains.anko.db.*
 import java.io.File
-import java.security.MessageDigest
-import java.security.NoSuchAlgorithmException
 
 /**
  * Created by houhuihua on 2018/8/24.
@@ -14,10 +12,13 @@ import java.security.NoSuchAlgorithmException
 class SaveAppsToDb (var context: Context) {
     var table = "topapps_list"
     var table_changlog = "topapps_changelog_list"
+    val SUSPEND = "[suspend app]"
+    val NEWCHANGE = "[new!!]"
 
     fun initDb() {
         createDbTables()
         querySuspendTable()
+        queryChangelogTable()
     }
 
     fun updateDbData(apps: MutableList<Category>) {
@@ -89,12 +90,22 @@ class SaveAppsToDb (var context: Context) {
                                         }
                                     })
                                     for (m in result) {
-                                        if (title.equals(m.get("title")) == false
-                                                || company.equals(m.get("company")) == false
-                                                || desc.equals(m.get("desc") == false)
+                                        var t = m.get("title") as String
+                                        var d = m.get("desc") as String
+                                        var c = m.get("company") as String
+
+                                        if ((title?.equals(t) == false && t?.length > 0 && t?.indexOf(NEWCHANGE) == -1)
+                                                || (company?.equals(c) == false && c?.length > 0 && c?.indexOf(NEWCHANGE) == -1)
+                                                || (desc?.equals(d) == false && d?.length > 0 && d?.indexOf(NEWCHANGE) == -1)
                                                 ) {
-                                            insertAppChangelogByAppinfo(j)
-                                            var tmp = "${title.equals(m.get("title"))}:$title\n${company.equals(m.get("company"))}$company\n${desc.equals(m.get("desc"))}$desc"
+                                            var app = j
+                                            if (title?.equals(t) == false) app.title = "$title:$NEWCHANGE to:$t"
+                                            if (company?.equals(c) == false) app.company= "$company:$NEWCHANGE to:$c"
+                                            if (desc?.equals(d) == false) app.desc= "$desc:$NEWCHANGE to:$d"
+
+                                            insertAppChangelogByAppinfo(app)
+
+                                            var tmp = "$NEWCHANGE:${!title.equals(t)}: $title\n${!company.equals(c)}: $company\n${!desc.equals(d)}: $desc"
                                             println(tmp)
                                             context.log.print("$tmp")
                                         }
@@ -106,7 +117,7 @@ class SaveAppsToDb (var context: Context) {
 
 
         }
-        queryTable(table_changlog)
+        //queryTable(table_changlog, "")
     }
 
 
@@ -123,7 +134,7 @@ class SaveAppsToDb (var context: Context) {
 
                 var map = mapOf<String, String>("title" to title, "rank" to rank, "package" to getPackageName(link),
                         "category" to category, "link" to link, "company" to company, "company_link" to company_link,
-                        "icon_link" to iconurl[0], "icon_link_small" to iconurl[1], "desc" to desc
+                        "icon_link" to iconurl[0], "icon_link_small" to iconurl[1], "desc" to desc, "date" to getFormatDate()
                 )
 
                 for (m in map) {
@@ -132,15 +143,13 @@ class SaveAppsToDb (var context: Context) {
 
 
                 select(table, "package")
-                        .whereSimple("package=?", getPackageName(link))
+                        .whereSimple("package = ?", getPackageName(link))
                         .exec {
                             if (count > 0) {
-                                update(table, values, "package=?", arrayOf(getPackageName(link)))
+                                update(table, values, "package = ?", arrayOf(getPackageName(link)))
                             } else {
-                                values.put("date", getFormatDate())
                                 insert(table, null, values)
-                                println("$table: insert.")
-                                //context.log.printnosave("$table: insert.")
+                                context.log.print("$table: insert.$title:${getPackageName(link)}")
                             }
                         }
 
@@ -154,7 +163,7 @@ class SaveAppsToDb (var context: Context) {
         context.database.use {
             with(app) {
                 select(table_changlog, "package")
-                        .whereSimple("package=? and date=?", getPackageName(link), getFormatDate())
+                        .whereSimple("package = ? and date = ?", getPackageName(link), getFormatDate())
                         .exec {
                             if (count > 0) {
                                 parseList(object : MapRowParser<Map<String, Any?>> {
@@ -195,7 +204,7 @@ class SaveAppsToDb (var context: Context) {
     }
 
 
-    fun queryTable(table: String) {
+    fun queryTable(table: String, tip:String) {
         context.database.use {
             select(table, "*")
             //select(table, "package", "title")
@@ -204,7 +213,7 @@ class SaveAppsToDb (var context: Context) {
                         parseList(object : MapRowParser<Map<String, Any?>> {
                             override fun parseRow(columns: Map<String, Any?>): Map<String, Any?> {
                                 //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-                                println("query $table:$count ${columns.toString()}")
+                                println("$table, $tip ${columns.toString()}")
                                 return columns
                             }
                         })
@@ -215,6 +224,7 @@ class SaveAppsToDb (var context: Context) {
 
     fun querySuspendTable() {
         db.use {
+            var cc = 0
             select(table, "*")
                     //select(table, "package", "title")
                     .exec {
@@ -222,8 +232,34 @@ class SaveAppsToDb (var context: Context) {
                         parseList(object : MapRowParser<Map<String, Any?>> {
                             override fun parseRow(columns: Map<String, Any?>): Map<String, Any?> {
                                 //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-                                if (columns.get("title").toString().indexOf("[suspend]") > -1)
-                                    println("query $table:$count ${columns.toString()}")
+                                var title = (columns.get("title") as String)
+                                var pkg = (columns.get("package") as String)
+                                if (title?.indexOf("$SUSPEND") > -1
+                                    || title?.indexOf("[suspend") > -1)
+                                    context.log.print("suspend query $table:${cc++} $title:$pkg")
+                                return columns
+                            }
+                        })
+
+                    }
+        }
+    }
+
+    fun queryChangelogTable() {
+        db.use {
+            var cc = 0
+            select(table_changlog, "*")
+                    //select(table, "package", "title")
+                    .exec {
+                        println("new change $table:$count:$columnCount")
+                        parseList(object : MapRowParser<Map<String, Any?>> {
+                            override fun parseRow(columns: Map<String, Any?>): Map<String, Any?> {
+                                //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+                                if ((columns.get("title") as String)?.indexOf("$NEWCHANGE") > -1) {
+                                    var title = columns.get("title")
+                                    var pkg = columns.get("package")
+                                    context.log.printnosave("$table_changlog query:${cc++} $title:$pkg")
+                                }
                                 return columns
                             }
                         })
@@ -233,7 +269,33 @@ class SaveAppsToDb (var context: Context) {
     }
 
 
-    fun updateAppsIcon(app:AppInfo, file: File) {
+    fun queryNewChangelogTable() {
+        db.use {
+            var cc = 0
+            select(table_changlog, "*")
+                    .whereSimple("date = ?", getFormatDate())
+                    //select(table, "package", "title")
+                    .exec {
+                        parseList(object : MapRowParser<Map<String, Any?>> {
+                            override fun parseRow(columns: Map<String, Any?>): Map<String, Any?> {
+                                //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+                                var title:String = (columns.get("title") as String)
+                                var pkg = (columns.get("package") as String)
+
+                                if (title?.indexOf(NEWCHANGE) > -1) {
+                                    context.log.print("$table_changlog query $table:${cc++} $title:$pkg")
+                                }
+                                return columns
+                            }
+                        })
+
+                    }
+        }
+    }
+
+
+
+    fun updateAppsIcon(app:AppInfo, file: File, path:String) {
 
         context.database.use {
             app?.run {
@@ -252,6 +314,7 @@ class SaveAppsToDb (var context: Context) {
                                             if (md51?.equals(md51_new) == false) {
 
                                                 updateAppChangelogIconByAppinfo(app, file)
+                                                saveAppChangedIcon(app, file, icon_data, path)
                                                 println("$title icon has changed!")
 
                                                 context.log.print("$title:icon has changed! $link")
@@ -268,6 +331,14 @@ class SaveAppsToDb (var context: Context) {
                         }
             }
         }
+    }
+
+    fun saveAppChangedIcon(app:AppInfo, file:File, icondata: ByteArray, path: String) {
+        var fileNameNew = path + checkFileName(app.title) + "-" + getFormatDate() +  "-new.jpeg"
+        var fileName = path + checkFileName(app.title) + "-" +  getFormatDate() +  ".jpeg"
+
+        file.copyTo(File(fileNameNew))
+        File(fileName).writeBytes(icondata)
     }
 
     fun updateAppChangelogIconByAppinfo(app:AppInfo, file: File) {
@@ -290,32 +361,19 @@ class SaveAppsToDb (var context: Context) {
         }
     }
 
-    private fun md5check(string: ByteArray?, type: String): String {
-        val md5: MessageDigest
-        return try {
-            md5 = MessageDigest.getInstance(type)
-            val bytes = md5.digest(string)
-            bytes2Hex(bytes)
-        } catch (e: NoSuchAlgorithmException) {
-            ""
-        }
-    }
-
-    private fun bytes2Hex(bts: ByteArray): String {
-        var des = ""
-        var tmp: String
-        for (i in bts.indices) {
-            tmp = Integer.toHexString(bts[i].toInt() and 0xFF)
-            if (tmp.length == 1) {
-                des += "0"
+    fun updateAppSuspend(app:AppInfo):Boolean {
+        app?.run {
+            if (title.indexOf(SUSPEND) == -1) {
+                title = "$SUSPEND:[${getFormatDate()}]:${title}"
+                updateAppTitle(app)
+                return true
             }
-            des += tmp
         }
-        return des
+        return false
     }
 
-    fun updateAppsTitle(app:AppInfo) {
 
+    fun updateAppTitle(app:AppInfo) {
         db.use {
             app?.run {
                 select(table, "package")
@@ -330,6 +388,42 @@ class SaveAppsToDb (var context: Context) {
             }
         }
     }
+
+
+    fun queryOldAppList() :MutableList<AppInfo>{
+        var date = getFormatDate()
+        var list = mutableListOf<AppInfo>()
+        context.database.use {
+            select(table, "*")
+                    .whereSimple("date != ?", date)
+                    //select(table, "package", "title")
+                    .exec {
+                        println("$table:$count:$columnCount")
+                        if (count > 0) {
+                            parseList(object : MapRowParser<Map<String, Any?>> {
+                                override fun parseRow(columns: Map<String, Any?>): Map<String, Any?> {
+                                    //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+                                    println("query $table:$count ${columns.toString()}")
+
+                                    var title = columns.get("title") as String
+                                    if (title.indexOf(SUSPEND) <= -1) {
+                                        var app = AppInfo()
+                                        app.title = title
+                                        app.link = columns.get("link") as String
+                                        app.date = columns.get("date") as String
+
+                                        list.add(app)
+                                    }
+                                    return columns
+                                }
+                            })
+                        }
+                    }
+
+        }
+        return list
+    }
+
 
     val db: MySqlHelper
         get() = MySqlHelper.getInstance(context)

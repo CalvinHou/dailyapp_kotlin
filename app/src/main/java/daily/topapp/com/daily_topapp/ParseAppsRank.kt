@@ -37,21 +37,23 @@ class ParseAppsRank{
 
     var topCategoryLists = mutableListOf<Category>()
 
-    private fun getTop(category: String) :Category{
+    private fun getTop(category: String, start:Int) :Category{
        return Category(category.toLowerCase(),
-               BASECATEGORY + category + "/collection/topselling_free?start=0&num=120")
+               BASECATEGORY + category + "/collection/topselling_free?start=$start&num=120")
     }
 
-    private fun getTopNew(category: String) :Category{
+    private fun getTopNew(category: String, start:Int) :Category{
         return Category(category.toLowerCase() + "_new",
-                BASECATEGORY + category + "/collection/topselling_new_free?start=0&num=120")
+                BASECATEGORY + category + "/collection/topselling_new_free?start=$start&num=120")
     }
 
 
     fun initTopCategoryList() : MutableList<Category>{
         for (i in topCategoryNameLists) {
-            topCategoryLists.add(getTop(i))
-            topCategoryLists.add(getTopNew(i))
+            topCategoryLists.add(getTop(i, 0))
+            topCategoryLists.add(getTop(i, 120))
+            topCategoryLists.add(getTopNew(i, 0))
+            topCategoryLists.add(getTopNew(i, 120))
         }
         return topCategoryLists
     }
@@ -70,10 +72,15 @@ class ParseAppsRank{
 
     }
 
+    var clientCategory = OkHttpClient.Builder()
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .build();
+
     fun getTopApps(url:String):String {
-        val client:OkHttpClient = OkHttpClient()
         val request:Request = Request.Builder().url(url).build()
-        val response:Response = client?.newCall(request).execute()
+        val response:Response = clientCategory.newCall(request).execute()
         println(url)
 
         return response?.body()!!.string()
@@ -94,10 +101,13 @@ class ParseAppsRank{
             for (j in childLists) {
                 var ele = j as? Element
                 ele?.run {
-                    //println("title is ${ele.text()}")
-                    app.rank = "${i+1}"
                     when(attr("class")) {
                         "title" -> {
+                            var pos = text().indexOf(".")
+                            if (pos > -1) {
+                                var rank:String = text().substring(0, pos)
+                                app.rank = Integer.parseInt(rank).toString()
+                            }
                             app.title = attr("title")
                             app.link = BASEURL + attr("href")
                         }
@@ -158,6 +168,7 @@ class ParseAppsRank{
     }
 
 
+    /*
     fun getFormatDate():String {
         val current = Date(System.currentTimeMillis())
         val name = "${current.year + 1900}-${current.month + 1}-${current.date}"
@@ -165,13 +176,20 @@ class ParseAppsRank{
         return name;
     }
 
+    fun getFormatPrevDate():String {
+        val current = Date(System.currentTimeMillis() - 1000 * 60 * 60 * 24)
+        val name = "${current.year + 1900}-${current.month + 1}-${current.date}"
+
+        return name;
+    }
+    */
+
     fun saveAppsToJson(list:MutableList<AppInfo>, file:String) {
         var gson = Gson()
         var jsonStr = gson.toJson(list)
 
 
         File("$file").writeText(jsonStr)
-        //println(jsonStr)
     }
 
     fun resolveAppsFromJson(file:String): MutableList<AppInfo>? {
@@ -182,15 +200,6 @@ class ParseAppsRank{
     }
 
 
-    fun checkFileName(title:String):String {
-        val ILLEGAL_CHARACTERS = charArrayOf('/', '\n', '\r', '\t', '\u0000', '`', '?', '*', '\\', '<', '>', '|', '\"', ':')
-        var tmp = title;
-
-        for (i in ILLEGAL_CHARACTERS) {
-            tmp = tmp.replace("$i", "")
-        }
-        return tmp;
-    }
 
     var totalCount = 0
     var totalCountLoad = 0
@@ -230,7 +239,7 @@ class ParseAppsRank{
                             })
                 }
                 else {
-                    println("exist download ${totalCount++} ${i.rank} ${i.title}")
+                    //println("exist download ${totalCount++} ${i.rank} ${i.title}")
                 }
 
 
@@ -242,7 +251,7 @@ class ParseAppsRank{
 
 
     val client = OkHttpClient()
-    fun downloadIconsTask(listApp:MutableList<AppInfo>, path: String, db:SaveAppsToDb): Int {
+    fun downloadIconsTask(listApp:MutableList<AppInfo>, path: String, db:SaveAppsToDb, log:LogInfo): Int {
 
         for (i in listApp) {
             i?.run {
@@ -262,17 +271,40 @@ class ParseAppsRank{
                     }
 
                     if (response?.isSuccessful == true) {
+                        /*
+                        var filenoneed  = false
+                        var tmpfile = File("${path}/${i.rank}_$title.tmp.jpeg")
+
                         var bmp = BitmapFactory.decodeStream(response.body()!!.byteStream())
+                        var fileoutTmp = FileOutputStream(tmpfile)
+                        bmp?.compress(Bitmap.CompressFormat.JPEG, 30, fileoutTmp)
+
+                        var md5prev = md5check(tmpfile.readBytes(), "MD5")
+                        var md5new = md5check(file.readBytes(), "MD5")
+
+                        fileoutTmp.close()
+                        tmpfile.delete()
+
+
+                        if (md5new.equals(md5prev)) {
+                            filenoneed = true
+                        }
+                        else {
+                        */
                         var fileOut = FileOutputStream(file)
+                        var bmp = BitmapFactory.decodeStream(response.body()!!.byteStream())
                         bmp?.compress(Bitmap.CompressFormat.JPEG, 30, fileOut)
                         fileOut.close()
 
-                        db?.updateAppsIcon(i, file)
-                        println("thread:download over ${totalCount++}:${totalCountLoad++} ${i.rank} ${i.title}: $title")
+                        db?.updateAppsIcon(i, file, getAppIconChangedPath())
+                        log.printnosave("thread:download over ${totalCount++}:${totalCountLoad++} ${i.rank} ${i.title}")
+                    }
+                    else {
+                        log.printnosave("thread:download failed ${totalCount++}:${totalCountFailed++} ${i.iconurl[1]} ${i.title}")
                     }
                 }
                 else {
-                    println("thread:download exis ${totalCount++}:${totalCountLoad} ${i.rank} ${i.title}: $title")
+                    log.printnosave("thread:download exist ${totalCount++}:${totalCountLoad} ${i.rank} ${i.title}: $title")
                 }
             }
         }
@@ -285,9 +317,10 @@ class ParseAppsRank{
             .readTimeout(60, TimeUnit.SECONDS)
             .build();
 
-    fun checkAppSuspendTask(listApp:MutableList<AppInfo>, db:SaveAppsToDb): Int {
+    fun checkAppSuspendTask(listApp:MutableList<AppInfo>, db:SaveAppsToDb, log:LogInfo): Int {
         //var error = "We're sorry, the requested URL was not found on this server."
 
+        var found = 0
         for (i in listApp) {
             i?.run {
                 val request = Request.Builder()
@@ -303,17 +336,40 @@ class ParseAppsRank{
                 }
 
                 if (response?.code() == 404) {
-                    i.title = "[suspend app]:${i.title}"
-                    println(i.title)
-                    db?.updateAppsTitle(i)
+                    if (db.updateAppSuspend(i)) {
+                        log.print("suspend app ${title}:$link")
+                        found++
+                    }
                 }
                 else {
-                    println("${response?.code()} len: ${response?.body()?.contentLength()}${i.rank}: ${i.title} ${i.link} ok.")
+                    log.printnosave("${response?.code()} len: ${response?.body()?.contentLength()}${i.rank}: ${i.title} ${i.link} ok.")
                 }
             }
         }
+
+        log.print("check suspend apps over, found:$found")
+
+
         return 0
     }
 
+
+    fun getAppPath(category: String):String {
+        return  "$APP_PATH/${getAppDirectory(category)}/"
+    }
+
+    fun getAppIconChangedPath():String {
+        return  "$APP_PATH/icon_changed/"
+    }
+
+
+    fun getIconPath(path:String, date:String):String {
+        return "$path/icon_$date/"
+    }
+
+
+    fun getJsonFile(path:String):String {
+        return "$path/app-${getFormatDate()}.json"
+    }
 
 }

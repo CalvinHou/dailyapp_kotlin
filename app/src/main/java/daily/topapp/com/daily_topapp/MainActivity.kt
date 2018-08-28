@@ -1,6 +1,5 @@
 package daily.topapp.com.daily_topapp
 
-import android.content.Context
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
@@ -20,8 +19,10 @@ class MainActivity : AppCompatActivity() {
 
         Thread(Runnable {
             val textBtn: TextView = findViewById(R.id.text_content)
+            val textBtn2: TextView = findViewById(R.id.text_important)
 
             log.textview = textBtn
+            log.textview2 = textBtn2
             log.handler = handler
             log.print("now begining....")
 
@@ -30,55 +31,62 @@ class MainActivity : AppCompatActivity() {
 
             parse.run {
                 var topLists= initTopCategoryList()
+
+                log.file = APP_PATH + "/appchange_log.txt"
+
                 for ((index, i) in topLists.withIndex()) {
                     val content = getTopApps(i.url)
                     var list = parseApps(content)
                     i.apps = list
 
-                    var appContet = ""
+                    var appContent = i.name + "\n"
 
                     for (i in list.indices) {
                         list[i].run {
-                            appContet += "$i:$title\n$desc\n$link\n$company\n$company_link\n${iconurl[0]}\n"
+                            appContent += "$rank:$title\n$desc\n$link\n$company\n$company_link\n${iconurl[0]}\n"
                         }
                     }
 
                     createCacheDir(APP_PATH) // for app
-                    var appPath = "$APP_PATH/${getAppDirectory(i.name)}/"
+                    var appPath = getAppPath(i.name)
                     createCacheDir(appPath)
+                    createCacheDir(APP_PATH + "/icon_changed/") // for app
 
-                    var iconPath = "$appPath/icon_${getFormatDate()}/"
+                    var iconPath = getIconPath(appPath, getFormatDate())
+                    //var iconPath = getIconPath(appPath, getFormatMonth())
                     createCacheDir(iconPath) // for icon
 
-                    val name = "$appPath/app-${getFormatDate()}.json"
+                    val name = getJsonFile(appPath)
                     saveAppsToJson(list, name)
 
                     i.path = iconPath
 
-                    log.file = appPath + "/appchange_log.txt"
 
-                    handler.post(Runnable {
-                        textBtn?.setText(appContet)
-                        //downloadIcons(list, iconPath)
-
-                    })
-
+                    db.updateAppChangelogAppinfoList(list, i.name) //first check changelog of title/desc/company
                     db.updateAppsByAppinfoList(list, i.name)
-                    db.updateAppChangelogAppinfoList(list, i.name)
+
+                    log.printonlyhandler(appContent)
 
                 }
+
+                db.queryNewChangelogTable() // print all change app log on today...
+
+                Thread.sleep(1000 * 5)
+                log.printnosave("start downloadIconsTask and checkAppSuspendTask, total:${topLists.size*120}")
+                Thread.sleep(1000 * 5)
 
                 //split two patch, else will generate too much http connection.
                 for (i in topLists) {
                     Thread(Runnable {
                         i?.run {
-                            downloadIconsTask(apps, path, db)
-                            checkAppSuspendTask(apps, db)
+                            downloadIconsTask(apps, path, db, log)
+                            // if the app is getting now, it will be not suspend, if suspend, you can not get it.
+                            //checkAppSuspendTask(apps, db, log)
                         }
                     }).start()
                 }
 
-                //db.updateDbData(topLists)
+                checkAppSuspendTask(db.queryOldAppList(), db, log) // check all suspend all on today...
             }
 
         }).start()

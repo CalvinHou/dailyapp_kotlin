@@ -9,6 +9,7 @@ class AppInfo {
     var rank:String  = ""
     var title:String = ""
     var link:String = ""
+    var date:String = ""
     var iconurl:Array<String> = arrayOf("", "")
     //var icon:Drawable? = null
     var desc:String = ""

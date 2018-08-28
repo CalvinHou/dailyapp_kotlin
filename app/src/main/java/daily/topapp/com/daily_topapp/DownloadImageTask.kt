@@ -46,7 +46,7 @@ class DownloadImageTask(l:Int) : AsyncTask<String, Void, Int>() {
                         fileOut.close()
                         println("task:download over ${totalCount++}:${totalCountLoad++} ${i.rank} ${i.title}: $title")
 
-                        db?.updateAppsIcon(i, file)
+                        ///db?.updateAppsIcon(i, file, "")
                     }
                 }
                 else {
