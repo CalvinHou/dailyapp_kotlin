@@ -30,12 +30,59 @@ class ParseAppsRank{
     val BASEURL = HTTPHEAD + "//play.google.com"
     val BASECATEGORY = BASEURL + "/store/apps/category/"
 
+    val BASE_DEV = "https://play.google.com/store/apps/developer?id="
 
     var topCategoryNameLists = listOf(
             "PERSONALIZATION", "MUSIC_AND_AUDIO", "COMMUNICATION", "PRODUCTIVITY", "ENTERTAINMENT", "TOOLS", "SOCIAL"
     )
 
+    var developList = listOf("HeyEmoji",
+            "crazystudio",
+            "Barley+WorkShop",
+            "BarleyMobile",
+            "wavestudio",
+            "WaveStudio",
+            "Red+Free+Music",
+            "Free+Music+Plus",
+            "EmojiTheme",
+            "EmojiStudio",
+            "BarleyGame",
+            "WaterwaveCenter"
+            )
+
+
+    var otherDevelopList = listOf("Jessie+Keyboard+Theme",
+            "Cool+keyboard",
+            "Fashion+Cute+Emoji",
+            "Simple+Graphics+Tool",
+            "Cool+keyboard+Theme+Designer",
+            "Abby+Theme+Center",
+            "Colorful+Keyboard+Theme+Designer",
+            "Hello+Keyboard+Theme",
+            "2018+Cool+Keyboard+Theme+for+Android",
+            "CM+Launcher+Team",
+            "Echo+Keyboard+Theme",
+            "Abby+Theme+Center",
+            "Hello+Keyboard+Theme",
+            "3D+Live+Animated+Keyboard+Themes+for+CM+Keyboard",
+            "2018+Supernova+Keyboard+Theme",
+            "Personalization+Apps",
+            "Launcher+and+Keyboard+Themes",
+            "Theme+Design",
+            "Keyboard+Theme+Master",
+            "Keyboard+Wallpaper",
+            "Personalization+Apps",
+            "Free+Cool+Keyboard+Themes",
+            "Cool+Theme+Team",
+            "Super+Cool+Keyboard+Theme",
+            "SY+Epic+Keyboard" //2018.08.30
+
+    )
+
+
     var topCategoryLists = mutableListOf<Category>()
+    var topmyDeveloperLists = mutableListOf<Category>()
+    var topOtherDeveloperLists = mutableListOf<Category>()
 
     private fun getTop(category: String, start:Int) :Category{
        return Category(category.toLowerCase(),
@@ -56,6 +103,20 @@ class ParseAppsRank{
             topCategoryLists.add(getTopNew(i, 120))
         }
         return topCategoryLists
+    }
+
+    fun initMyDeveloperList() : MutableList<Category>{
+        for (i in developList) {
+            topmyDeveloperLists.add(Category("mydeveloper", BASE_DEV + i))
+        }
+        return topmyDeveloperLists
+    }
+
+    fun initOtherDeveloperList() : MutableList<Category>{
+        for (i in otherDevelopList) {
+            topOtherDeveloperLists.add(Category("otherdeveloper", BASE_DEV + i))
+        }
+        return topOtherDeveloperLists
     }
 
     fun getAppDirectory(url:String):String {
@@ -104,7 +165,7 @@ class ParseAppsRank{
                     when(attr("class")) {
                         "title" -> {
                             var pos = text().indexOf(".")
-                            if (pos > -1) {
+                            if (pos > -1 && pos < 5) {
                                 var rank:String = text().substring(0, pos)
                                 app.rank = Integer.parseInt(rank).toString()
                             }

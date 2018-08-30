@@ -58,7 +58,6 @@ class LogInfo(var file:String, var handler: Handler?, var textview: TextView?, v
         })
     }
 
-
 }
 
 // Access property for Context

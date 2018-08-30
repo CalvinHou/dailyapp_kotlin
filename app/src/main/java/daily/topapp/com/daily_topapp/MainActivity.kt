@@ -28,6 +28,7 @@ class MainActivity : AppCompatActivity() {
 
             db.initDb()
             //db.destoryDb()
+            db.queryAppsInfo()
 
             parse.run {
                 var topLists= initTopCategoryList()
@@ -68,7 +69,6 @@ class MainActivity : AppCompatActivity() {
                     log.printonlyhandler(appContent)
 
                 }
-
                 db.queryNewChangelogTable() // print all change app log on today...
 
                 Thread.sleep(1000 * 5)

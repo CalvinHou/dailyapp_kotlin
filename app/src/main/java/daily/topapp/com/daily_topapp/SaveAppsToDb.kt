@@ -17,9 +17,13 @@ class SaveAppsToDb (var context: Context) {
 
     fun initDb() {
         createDbTables()
+    }
+
+    fun queryAppsInfo() {
         querySuspendTable()
         queryChangelogTable()
     }
+
 
     fun updateDbData(apps: MutableList<Category>) {
         updateAppsByCategoryList(apps)
