@@ -1,8 +1,12 @@
-package daily.topapp.com.daily_topapp
+package daily.topapp.com.daily_topapp.utils
 
+import daily.topapp.com.daily_topapp.data.ParseApps
+import daily.topapp.com.daily_topapp.data.Category
+import daily.topapp.com.daily_topapp.db.AppsDb
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.util.*
+import java.util.regex.Pattern
 
 /**
  * Created by houhuihua on 2018/8/23.
@@ -74,7 +78,13 @@ fun checkFileName(title:String):String {
     return tmp;
 }
 
-fun resolveApps(parse:ParseAppsRank, log:LogInfo, db: SaveAppsToDb, topLists:MutableList<Category>) {
+
+fun isNumeric(str: String): Boolean {
+    val pattern = Pattern.compile("[0-9]*")
+    return pattern.matcher(str).matches()
+}
+
+fun resolveApps(parse: ParseApps, log: LogInfo, db: AppsDb, topLists:MutableList<Category>) {
     parse?.run {
         //var topLists= initOtherDeveloperList()
 
@@ -88,14 +98,15 @@ fun resolveApps(parse:ParseAppsRank, log:LogInfo, db: SaveAppsToDb, topLists:Mut
 
             var appContent = "\n"
 
-            for (i in list.indices) {
-                list[i].run {
+            for (j in list.indices) {
+                list[j].run {
+                    category = i.name
                     appContent += "$rank:$title\n$desc\n$link\n$company\n$company_link\n${iconurl[0]}\n"
                 }
             }
 
             createCacheDir(APP_PATH) // for app
-            var appPath = getAppPath("mydevelopers")
+            var appPath = getAppPath(i.name)
             createCacheDir(appPath)
             createCacheDir(APP_PATH + "/icon_changed/") // for app
 
@@ -106,11 +117,10 @@ fun resolveApps(parse:ParseAppsRank, log:LogInfo, db: SaveAppsToDb, topLists:Mut
             val name = getJsonFile(appPath)
             saveAppsToJson(list, name)
 
-            //i.path = iconPath
+            i.path = iconPath
 
-
-            db.updateAppChangelogAppinfoList(list, "mydeveloper") //first check changelog of title/desc/company
-            db.updateAppsByAppinfoList(list, "mydeveloper")
+            db.updateAppChangelogAppinfoList(list, i.name) //first check changelog of title/desc/company
+            db.updateAppsByAppinfoList(list, i.name)
 
             log.printonlyhandler(appContent)
 
@@ -122,14 +132,16 @@ fun resolveApps(parse:ParseAppsRank, log:LogInfo, db: SaveAppsToDb, topLists:Mut
         Thread.sleep(1000 * 5)
         log.print("")
 
+        /*
         for (i in topLists) {
             Thread(Runnable {
                 i?.run {
-                    //downloadIconsTask(apps, path, db, log)
+                    downloadIconsTask(apps, path, db, log)
                     checkAppSuspendTask(apps, db, log)
                 }
             }).start()
         }
+        */
 
     }
 }

@@ -1,9 +1,8 @@
-package daily.topapp.com.daily_topapp
+package daily.topapp.com.daily_topapp.utils
 
 
 import android.content.Context
 import android.os.Handler
-import android.util.Log
 import android.widget.TextView
 import java.io.File
 import java.util.*
@@ -20,7 +19,7 @@ class LogInfo(var file:String, var handler: Handler?, var textview: TextView?, v
 
         @Synchronized
         fun getInstance(file:String, handler:Handler?,
-                        textview:TextView?, textview2: TextView?): LogInfo{
+                        textview:TextView?, textview2: TextView?): LogInfo {
             if (instance == null) {
                 instance = LogInfo(file, handler, textview, textview2)
             }
@@ -61,7 +60,7 @@ class LogInfo(var file:String, var handler: Handler?, var textview: TextView?, v
 }
 
 // Access property for Context
-val Context.log:LogInfo get()= LogInfo.getInstance("", null, null, null)
+val Context.log: LogInfo get()= LogInfo.getInstance("", null, null, null)
 
 
 

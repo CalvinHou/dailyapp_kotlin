@@ -1,4 +1,4 @@
-package daily.topapp.com.daily_topapp
+package daily.topapp.com.daily_topapp.data
 
 import android.graphics.drawable.Drawable
 

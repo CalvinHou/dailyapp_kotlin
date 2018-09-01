@@ -1,19 +1,25 @@
-package daily.topapp.com.daily_topapp
+package daily.topapp.com.daily_topapp.ui
 
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.widget.TextView
+import daily.topapp.com.daily_topapp.*
+import daily.topapp.com.daily_topapp.data.ParseApps
+import daily.topapp.com.daily_topapp.db.AppsDb
+import daily.topapp.com.daily_topapp.utils.log
+import daily.topapp.com.daily_topapp.utils.resolveApps
 
-class MyDeveloper : AppCompatActivity() {
+class OtherDeveloperActivity : AppCompatActivity() {
+
     val handler = Handler()
-    var parse = ParseAppsRank()
+    var parse = ParseApps()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        var db = SaveAppsToDb(applicationContext)
+        var db = AppsDb(applicationContext)
 
         Thread(Runnable {
             val textBtn: TextView = findViewById(R.id.text_content)
@@ -27,9 +33,10 @@ class MyDeveloper : AppCompatActivity() {
             db.initDb()
             //db.destoryDb()
 
-            resolveApps(parse, log, db, parse.initMyDeveloperList())
+            resolveApps(parse, log, db, parse.initOtherDeveloperList())
 
         }).start()
 
     }
+
 }

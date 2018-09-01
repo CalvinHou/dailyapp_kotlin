@@ -1,7 +1,10 @@
-package daily.topapp.com.daily_topapp
+package daily.topapp.com.daily_topapp.db
 
 import android.content.ContentValues
 import android.content.Context
+import daily.topapp.com.daily_topapp.data.AppInfo
+import daily.topapp.com.daily_topapp.data.Category
+import daily.topapp.com.daily_topapp.utils.*
 import org.jetbrains.anko.db.*
 import java.io.File
 
@@ -9,7 +12,7 @@ import java.io.File
  * Created by houhuihua on 2018/8/24.
  */
 
-class SaveAppsToDb (var context: Context) {
+class AppsDb(var context: Context) {
     var table = "topapps_list"
     var table_changlog = "topapps_changelog_list"
     val SUSPEND = "[suspend app]"
@@ -70,8 +73,8 @@ class SaveAppsToDb (var context: Context) {
     }
 
     fun updateAppChangelogByCategoryList(apps: MutableList<Category>) {
-        apps[0].apps[0].title += " - only test..."
-        apps[0].apps[20].title += " - only test..."
+        //apps[0].apps[0].title += " - only test..."
+        //apps[0].apps[20].title += " - only test..."
 
         for (i in apps) {
             updateAppChangelogAppinfoList(i.apps, i.name)
@@ -131,7 +134,7 @@ class SaveAppsToDb (var context: Context) {
             }
     }
 
-    fun updateAppsByAppinfo(app:AppInfo) {
+    fun updateAppsByAppinfo(app: AppInfo) {
         db.use {
             val values = ContentValues()
             app?.run {
@@ -163,7 +166,7 @@ class SaveAppsToDb (var context: Context) {
 
 
 
-    fun insertAppChangelogByAppinfo(app:AppInfo) {
+    fun insertAppChangelogByAppinfo(app: AppInfo) {
         context.database.use {
             with(app) {
                 select(table_changlog, "package")
@@ -299,7 +302,7 @@ class SaveAppsToDb (var context: Context) {
 
 
 
-    fun updateAppsIcon(app:AppInfo, file: File, path:String) {
+    fun updateAppsIcon(app: AppInfo, file: File, path:String) {
 
         context.database.use {
             app?.run {
@@ -337,15 +340,15 @@ class SaveAppsToDb (var context: Context) {
         }
     }
 
-    fun saveAppChangedIcon(app:AppInfo, file:File, icondata: ByteArray, path: String) {
+    fun saveAppChangedIcon(app: AppInfo, file:File, icondata: ByteArray, path: String) {
         var fileNameNew = path + checkFileName(app.title) + "-" + getFormatDate() +  "-new.jpeg"
-        var fileName = path + checkFileName(app.title) + "-" +  getFormatDate() +  ".jpeg"
+        var fileName = path + checkFileName(app.title) + "-" + getFormatDate() +  ".jpeg"
 
         file.copyTo(File(fileNameNew))
         File(fileName).writeBytes(icondata)
     }
 
-    fun updateAppChangelogIconByAppinfo(app:AppInfo, file: File) {
+    fun updateAppChangelogIconByAppinfo(app: AppInfo, file: File) {
         db.use {
             app?.run {
                 select(table_changlog, "package", "icon_data")
@@ -365,7 +368,7 @@ class SaveAppsToDb (var context: Context) {
         }
     }
 
-    fun updateAppSuspend(app:AppInfo):Boolean {
+    fun updateAppSuspend(app: AppInfo):Boolean {
         app?.run {
             if (title.indexOf(SUSPEND) == -1) {
                 title = "$SUSPEND:[${getFormatDate()}]:${title}"
@@ -377,7 +380,7 @@ class SaveAppsToDb (var context: Context) {
     }
 
 
-    fun updateAppTitle(app:AppInfo) {
+    fun updateAppTitle(app: AppInfo) {
         db.use {
             app?.run {
                 select(table, "package")
@@ -393,6 +396,44 @@ class SaveAppsToDb (var context: Context) {
         }
     }
 
+    fun queryLatestAppList() :MutableList<AppInfo>{
+        var date = getFormatDate()
+        var list = mutableListOf<AppInfo>()
+        context.database.use {
+            select(table, "*")
+                    .whereSimple("date = ?", date)
+                    //select(table, "package", "title")
+                    .exec {
+                        println("$table:$count:$columnCount")
+                        if (count > 0) {
+                            parseList(object : MapRowParser<Map<String, Any?>> {
+                                override fun parseRow(columns: Map<String, Any?>): Map<String, Any?> {
+                                    //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+                                    println("query $table:$count ${columns.toString()}")
+
+                                    var title = columns.get("title") as String
+                                    if (title.indexOf(SUSPEND) <= -1) {
+                                        var app = AppInfo()
+                                        app.title = title
+                                        app.link = columns.get("link") as String
+                                        app.date = columns.get("date") as String
+                                        app.iconurl = arrayOf(columns.get("icon_link") as String, columns.get("icon_link_small") as String)
+                                        app.rank = columns.get("rank") as String
+                                        app.company = columns.get("company") as String
+                                        app.company_link = columns.get("company_link") as String
+                                        app.category = columns.get("category") as String
+
+                                        list.add(app)
+                                    }
+                                    return columns
+                                }
+                            })
+                        }
+                    }
+
+        }
+        return list
+    }
 
     fun queryOldAppList() :MutableList<AppInfo>{
         var date = getFormatDate()

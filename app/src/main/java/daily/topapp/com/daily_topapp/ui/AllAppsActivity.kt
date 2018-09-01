@@ -1,21 +1,26 @@
-package daily.topapp.com.daily_topapp
+package daily.topapp.com.daily_topapp.ui
 
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.widget.TextView
+import daily.topapp.com.daily_topapp.*
+import daily.topapp.com.daily_topapp.data.ParseApps
+import daily.topapp.com.daily_topapp.db.AppsDb
+import daily.topapp.com.daily_topapp.utils.getFormatDate
+import daily.topapp.com.daily_topapp.utils.log
 
 
-class MainActivity : AppCompatActivity() {
+class AllAppsActivity : AppCompatActivity() {
 
     val handler = Handler()
-    var parse = ParseAppsRank()
+    var parse = ParseApps()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        var db = SaveAppsToDb(applicationContext)
+        var db = AppsDb(applicationContext)
 
         Thread(Runnable {
             val textBtn: TextView = findViewById(R.id.text_content)
@@ -42,8 +47,9 @@ class MainActivity : AppCompatActivity() {
 
                     var appContent = i.name + "\n"
 
-                    for (i in list.indices) {
-                        list[i].run {
+                    for (j in list.indices) {
+                        list[j].run {
+                            category = i.name
                             appContent += "$rank:$title\n$desc\n$link\n$company\n$company_link\n${iconurl[0]}\n"
                         }
                     }
@@ -76,17 +82,17 @@ class MainActivity : AppCompatActivity() {
                 Thread.sleep(1000 * 5)
 
                 //split two patch, else will generate too much http connection.
+                /*
                 for (i in topLists) {
                     Thread(Runnable {
                         i?.run {
                             downloadIconsTask(apps, path, db, log)
-                            // if the app is getting now, it will be not suspend, if suspend, you can not get it.
-                            //checkAppSuspendTask(apps, db, log)
                         }
                     }).start()
                 }
 
                 checkAppSuspendTask(db.queryOldAppList(), db, log) // check all suspend all on today...
+                */
             }
 
         }).start()

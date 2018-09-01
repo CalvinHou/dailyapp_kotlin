@@ -1,20 +1,24 @@
-package daily.topapp.com.daily_topapp
+package daily.topapp.com.daily_topapp.ui
 
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.widget.TextView
+import daily.topapp.com.daily_topapp.*
+import daily.topapp.com.daily_topapp.data.ParseApps
+import daily.topapp.com.daily_topapp.db.AppsDb
+import daily.topapp.com.daily_topapp.utils.log
 
-class OtherDeveloperActivity : AppCompatActivity() {
+class DownloadIconsActivity : AppCompatActivity() {
 
     val handler = Handler()
-    var parse = ParseAppsRank()
+    var parse = ParseApps()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        var db = SaveAppsToDb(applicationContext)
+        var db = AppsDb(applicationContext)
 
         Thread(Runnable {
             val textBtn: TextView = findViewById(R.id.text_content)
@@ -28,10 +32,9 @@ class OtherDeveloperActivity : AppCompatActivity() {
             db.initDb()
             //db.destoryDb()
 
-            resolveApps(parse, log, db, parse.initOtherDeveloperList())
+            parse?.downloadIconsTask(db.queryLatestAppList(), "", db, log)
 
         }).start()
 
     }
-
 }

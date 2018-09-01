@@ -1,4 +1,4 @@
-package daily.topapp.com.daily_topapp
+package daily.topapp.com.daily_topapp.data
 
 import android.graphics.Bitmap
 import com.google.gson.Gson
@@ -13,9 +13,13 @@ import org.jsoup.nodes.Element
 import java.io.File
 import java.io.FileOutputStream
 import java.lang.Exception
-import java.util.*
 import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
+import daily.topapp.com.daily_topapp.db.AppsDb
+import daily.topapp.com.daily_topapp.utils.LogInfo
+import daily.topapp.com.daily_topapp.utils.checkFileName
+import daily.topapp.com.daily_topapp.utils.getFormatDate
+import daily.topapp.com.daily_topapp.utils.isNumeric
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
@@ -23,7 +27,7 @@ import java.util.concurrent.TimeUnit
  * Created by houhuihua on 2018/8/23.
  */
 
-class ParseAppsRank{
+class ParseApps {
 
     val APP_PATH = "/sdcard/daily_app/"
     val HTTPHEAD = "https:"
@@ -84,12 +88,12 @@ class ParseAppsRank{
     var topmyDeveloperLists = mutableListOf<Category>()
     var topOtherDeveloperLists = mutableListOf<Category>()
 
-    private fun getTop(category: String, start:Int) :Category{
+    private fun getTop(category: String, start:Int) : Category {
        return Category(category.toLowerCase(),
                BASECATEGORY + category + "/collection/topselling_free?start=$start&num=120")
     }
 
-    private fun getTopNew(category: String, start:Int) :Category{
+    private fun getTopNew(category: String, start:Int) : Category {
         return Category(category.toLowerCase() + "_new",
                 BASECATEGORY + category + "/collection/topselling_new_free?start=$start&num=120")
     }
@@ -166,8 +170,18 @@ class ParseAppsRank{
                         "title" -> {
                             var pos = text().indexOf(".")
                             if (pos > -1 && pos < 5) {
-                                var rank:String = text().substring(0, pos)
-                                app.rank = Integer.parseInt(rank).toString()
+                                try {
+                                    var rank: String = text().substring(0, pos)
+                                    if (isNumeric(rank)) {
+                                        app.rank = Integer.parseInt(rank).toString()
+                                    }
+                                    else {
+                                        app.rank = "no"
+                                    }
+                                }
+                                catch (e:Exception) {
+                                    e.printStackTrace()
+                                }
                             }
                             app.title = attr("title")
                             app.link = BASEURL + attr("href")
@@ -312,12 +326,16 @@ class ParseAppsRank{
 
 
     val client = OkHttpClient()
-    fun downloadIconsTask(listApp:MutableList<AppInfo>, path: String, db:SaveAppsToDb, log:LogInfo): Int {
+    fun downloadIconsTask(listApp:MutableList<AppInfo>, path: String, db: AppsDb, log: LogInfo): Int {
 
         for (i in listApp) {
             i?.run {
                 var title = checkFileName(i.title.trim())
-                var file = File("${path}/${i.rank}_$title.jpeg")
+                var p = path
+                if (p.length <= 0)  {
+                    p = getIconPath(getAppPath(i.category), getFormatDate())
+                }
+                var file = File("${p}/${rank}_$title.jpeg")
 
                 if (file.exists() == false) {
                     val request = Request.Builder()
@@ -378,7 +396,7 @@ class ParseAppsRank{
             .readTimeout(60, TimeUnit.SECONDS)
             .build();
 
-    fun checkAppSuspendTask(listApp:MutableList<AppInfo>, db:SaveAppsToDb, log:LogInfo): Int {
+    fun checkAppSuspendTask(listApp:MutableList<AppInfo>, db: AppsDb, log: LogInfo): Int {
         //var error = "We're sorry, the requested URL was not found on this server."
 
         var found = 0

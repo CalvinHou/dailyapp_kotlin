@@ -1,8 +1,10 @@
-package daily.topapp.com.daily_topapp
+package daily.topapp.com.daily_topapp.utils
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.AsyncTask
+import daily.topapp.com.daily_topapp.data.AppInfo
+import daily.topapp.com.daily_topapp.db.AppsDb
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -17,7 +19,7 @@ class DownloadImageTask(l:Int) : AsyncTask<String, Void, Int>() {
     var listApp:MutableList<AppInfo> = mutableListOf()
     var totalCount = 0
     var totalCountLoad = 0
-    var db:SaveAppsToDb? = null
+    var db: AppsDb? = null
 
     override fun doInBackground(vararg  path: String): Int {
         val client = OkHttpClient()

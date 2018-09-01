@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="daily.topapp.com.daily_topapp.EntryActivity">
+    tools:context="daily.topapp.com.daily_topapp.ui.EntryActivity">
 
     <LinearLayout
         android:orientation="vertical"
@@ -34,5 +34,22 @@
             android:layout_width="match_parent"
             android:layout_marginTop="30.0dp"
             />
+
+        <Button
+            android:id="@+id/buttonsuspend"
+            android:layout_height="wrap_content"
+            android:text="Check app suspend"
+            android:layout_width="match_parent"
+            android:layout_marginTop="30.0dp"
+            />
+
+        <Button
+            android:id="@+id/buttondownloadicon"
+            android:layout_height="wrap_content"
+            android:text="Download app icons"
+            android:layout_width="match_parent"
+            android:layout_marginTop="30.0dp"
+            />
+
     </LinearLayout>
 </android.support.constraint.ConstraintLayout>
