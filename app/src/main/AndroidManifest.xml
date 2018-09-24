@@ -23,7 +23,7 @@
             -->
 
         </activity>
-        <activity android:name=".ui.OtherDeveloperActivity">
+        <activity android:name=".ui.DevelopersCheckActivity">
 
             <!--
         <intent-filter>

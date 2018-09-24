@@ -13,6 +13,7 @@ import java.io.File
  */
 
 class AppsDb(var context: Context) {
+    var category = "categories_list"
     var table = "topapps_list"
     var table_changlog = "topapps_changelog_list"
     val SUSPEND = "[suspend app]"
@@ -62,6 +63,15 @@ class AppsDb(var context: Context) {
                     "desc" to TEXT,
                     "date" to TEXT,
                     "icon_data" to BLOB)
+
+            //dropTable(category)
+            createTable(category, true,
+                    "id" to INTEGER + PRIMARY_KEY + UNIQUE,
+                    "category" to TEXT,
+                    //"company_link" to TEXT,
+                    "url" to TEXT,
+                    "date" to TEXT,
+                    "status" to TEXT)
         }
     }
 
@@ -141,7 +151,7 @@ class AppsDb(var context: Context) {
 
                 var map = mapOf<String, String>("title" to title, "rank" to rank, "package" to getPackageName(link),
                         "category" to category, "link" to link, "company" to company, "company_link" to company_link,
-                        "icon_link" to iconurl[0], "icon_link_small" to iconurl[1], "desc" to desc, "date" to getFormatDate()
+                        "icon_link" to iconurl[0], "icon_link_small" to iconurl[1], "desc" to desc, "date" to getTodayFormatDate()
                 )
 
                 for (m in map) {
@@ -158,6 +168,7 @@ class AppsDb(var context: Context) {
                                 insert(table, null, values)
                                 context.log.print("$table: insert.$title:${getPackageName(link)}")
                             }
+                            updateCategoryInfo(getCategory(company))
                         }
 
             }
@@ -170,7 +181,7 @@ class AppsDb(var context: Context) {
         context.database.use {
             with(app) {
                 select(table_changlog, "package")
-                        .whereSimple("package = ? and date = ?", getPackageName(link), getFormatDate())
+                        .whereSimple("package = ? and date = ?", getPackageName(link), getTodayFormatDate())
                         .exec {
                             if (count > 0) {
                                 parseList(object : MapRowParser<Map<String, Any?>> {
@@ -184,7 +195,7 @@ class AppsDb(var context: Context) {
                             else {
                                 val values = ContentValues()
                                 val map = mapOf<String, String>("title" to title,  "rank" to rank, "package" to getPackageName(link),
-                                        "category" to category, "company" to company, "desc" to desc, "date" to getFormatDate()
+                                        "category" to category, "company" to company, "desc" to desc, "date" to getTodayFormatDate()
                                 )
                                 for (m in map) {
                                     m.run { values.put(key, value) }
@@ -280,7 +291,7 @@ class AppsDb(var context: Context) {
         db.use {
             var cc = 0
             select(table_changlog, "*")
-                    .whereSimple("date = ?", getFormatDate())
+                    .whereSimple("date = ?", getTodayFormatDate())
                     //select(table, "package", "title")
                     .exec {
                         parseList(object : MapRowParser<Map<String, Any?>> {
@@ -341,8 +352,8 @@ class AppsDb(var context: Context) {
     }
 
     fun saveAppChangedIcon(app: AppInfo, file:File, icondata: ByteArray, path: String) {
-        var fileNameNew = path + checkFileName(app.title) + "-" + getFormatDate() +  "-new.jpeg"
-        var fileName = path + checkFileName(app.title) + "-" + getFormatDate() +  ".jpeg"
+        var fileNameNew = path + checkFileName(app.title) + "-" + getTodayFormatDate() +  "-new.jpeg"
+        var fileName = path + checkFileName(app.title) + "-" + getTodayFormatDate() +  ".jpeg"
 
         file.copyTo(File(fileNameNew))
         File(fileName).writeBytes(icondata)
@@ -352,7 +363,7 @@ class AppsDb(var context: Context) {
         db.use {
             app?.run {
                 select(table_changlog, "package", "icon_data")
-                        .whereSimple("package=? and date=?", getPackageName(link), getFormatDate())
+                        .whereSimple("package=? and date=?", getPackageName(link), getTodayFormatDate())
                         .exec {
                             if (count > 0) { // update icon_date now, it is no add before.
                                 var content = file.readBytes()
@@ -371,7 +382,7 @@ class AppsDb(var context: Context) {
     fun updateAppSuspend(app: AppInfo):Boolean {
         app?.run {
             if (title.indexOf(SUSPEND) == -1) {
-                title = "$SUSPEND:[${getFormatDate()}]:${title}"
+                title = "$SUSPEND:[${getTodayFormatDate()}]:${title}"
                 updateAppTitle(app)
                 return true
             }
@@ -397,7 +408,7 @@ class AppsDb(var context: Context) {
     }
 
     fun queryLatestAppList() :MutableList<AppInfo>{
-        var date = getFormatDate()
+        var date = getTodayFormatDate()
         var list = mutableListOf<AppInfo>()
         context.database.use {
             select(table, "*")
@@ -436,7 +447,7 @@ class AppsDb(var context: Context) {
     }
 
     fun queryOldAppList() :MutableList<AppInfo>{
-        var date = getFormatDate()
+        var date = getTodayFormatDate()
         var list = mutableListOf<AppInfo>()
         context.database.use {
             select(table, "*")
@@ -468,6 +479,262 @@ class AppsDb(var context: Context) {
         }
         return list
     }
+
+    fun queryOtherDevelopAppList() :MutableList<AppInfo>{
+        var date = getTodayFormatDate()
+        var list = mutableListOf<AppInfo>()
+        context.database.use {
+            select(table, "*")
+                    .whereSimple("category = ?", "otherdeveloper")
+                    //select(table, "package", "title")
+                    .exec {
+                        println("$table:$count:$columnCount")
+                        if (count > 0) {
+                            parseList(object : MapRowParser<Map<String, Any?>> {
+                                override fun parseRow(columns: Map<String, Any?>): Map<String, Any?> {
+                                    //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+                                    println("query $table:$count ${columns.toString()}")
+
+                                    var title = columns.get("title") as String
+                                    //if (title.indexOf(SUSPEND) <= -1)
+                                    //{
+                                        var app = AppInfo()
+                                        app.title = title
+                                        app.link = columns.get("link") as String
+                                        app.date = columns.get("date") as String
+
+                                        list.add(app)
+                                    //}
+                                    return columns
+                                }
+                            })
+                        }
+                    }
+
+        }
+        return list
+    }
+
+    fun queryAllNewDevelopersList(name:String) :MutableList<Category>{
+        var list = mutableListOf<Category>()
+
+        context.database.use {
+            select(category, "*")
+                    .exec {
+                        println("$table:$count:$columnCount")
+                        if (count > 0) {
+                            parseList(object : MapRowParser<Map<String, Any?>> {
+                                override fun parseRow(columns: Map<String, Any?>): Map<String, Any?> {
+                                    //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+                                    println("query $table:$count ${columns.toString()}")
+                                    var c = columns.get("category") as String
+
+                                    if (c.contains("_new")) {
+                                        addCategory(list, columns)
+                                    }
+
+                                    return columns
+                                }
+                            })
+                        }
+                    }
+
+        }
+        return list
+    }
+
+    private fun addCategory(list: MutableList<Category>, columns: Map<String, Any?>) {
+        var company = columns.get("company") as String
+
+        var info = getCategory(company)
+        var find = false
+        for (i in list) {
+            if (i.name.equals(company)) {
+                find = true
+                break
+            }
+        }
+        if (find == false) {
+            list.add(info)
+        }
+    }
+
+    private fun getCategory(company:String):Category {
+        var link = company.replace(" ", "+")
+                .replace("&", "%26")
+
+        var info = Category(company, BASE_DEV + link)
+        var pos = company.indexOf(":$NEWCHANGE")
+        if (pos > -1) {
+            info.name = company.substring(0, pos)
+            val l = info.name.replace(" ", "+")
+                    .replace("&", "%26")
+            info.url = BASE_DEV + l
+        }
+
+        return info
+    }
+
+
+    fun queryNewDevelopersList(name:String) :MutableList<Category>{
+        var list = mutableListOf<Category>()
+
+        context.database.use {
+            select(category, "*")
+                    .whereSimple("category = ? and date != ?", name, getTodayFormatDate())
+                    //select(table, "package", "title")
+                    .exec {
+                        println("$table:$count:$columnCount")
+                        if (count > 0) {
+                            parseList(object : MapRowParser<Map<String, Any?>> {
+                                override fun parseRow(columns: Map<String, Any?>): Map<String, Any?> {
+                                    //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+                                    println("query $table:$count ${columns.toString()}")
+
+                                    addCategory(list, columns)
+
+                                    return columns
+                                }
+                            })
+                        }
+                    }
+
+        }
+        return list
+    }
+
+
+    fun queryAllDevelopsList() :MutableList<Category>{
+        var list = mutableListOf<Category>()
+        context.database.use {
+            select(category, "*")
+                    //select(table, "package", "title")
+                    .whereSimple("date != ?", getTodayFormatDate())
+                    .exec {
+                        println("$table:$count:$columnCount")
+                        if (count > 0) {
+                            parseList(object : MapRowParser<Map<String, Any?>> {
+                                override fun parseRow(columns: Map<String, Any?>): Map<String, Any?> {
+                                    //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+                                    println("query $table:$count ${columns.toString()}")
+                                    //addCategory(list, columns)
+                                    val name = columns.get("category") as String
+                                    val url = columns.get("url") as String
+                                    val status = columns.get("status") as String
+                                    //val date = columns.get("date") as String
+                                    list.add(Category(name, url, status))
+
+                                    return columns
+                                }
+                            })
+                        }
+                    }
+
+        }
+        return list
+    }
+
+
+    fun queryAllDevelopsListFromApps() :MutableList<Category>{
+        var list = mutableListOf<Category>()
+        context.database.use {
+            select(table, "*")
+                    //select(table, "package", "title")
+                    .whereSimple("date != ?", getTodayFormatDate())
+                    .exec {
+                        println("$table:$count:$columnCount")
+                        if (count > 0) {
+                            parseList(object : MapRowParser<Map<String, Any?>> {
+                                override fun parseRow(columns: Map<String, Any?>): Map<String, Any?> {
+                                    //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+                                    println("query $table:$count ${columns.toString()}")
+                                    addCategory(list, columns)
+
+                                    return columns
+                                }
+                            })
+                        }
+                    }
+
+        }
+        return list
+    }
+
+    fun isCategorySuspend(c: Category):Boolean {
+        var suspend = false
+        db.use {
+            val values = ContentValues()
+            c?.run {
+                var map = mapOf<String, String>("category" to name, "url" to url,
+                        "status" to status
+                )
+                for (m in map) {
+                    values.put(m.key, m.value)
+                }
+
+                select(category, "*")
+                        .whereSimple("category = ? and status = ?", name, "suspend")
+                        .exec {
+                            if (count > 0) {
+                                suspend = true
+                            }
+                        }
+
+            }
+        }
+        return suspend
+    }
+
+
+
+    fun updateCategoryInfo(c: Category) {
+        db.use {
+            val values = ContentValues()
+            c?.run {
+                var map = mapOf<String, String>("category" to name, "url" to url,
+                        "status" to status, "date" to getTodayFormatDate()
+                )
+                for (m in map) {
+                    values.put(m.key, m.value)
+                }
+
+                select(category, "*")
+                        .whereSimple("category = ?", name)
+                        .exec {
+                            if (count > 0) {
+                                update(category, values, "category = ?", arrayOf(name))
+                            } else {
+                                insert(category, null, values)
+                                context.log.print("$category: insert.$name:$url")
+                            }
+                        }
+
+            }
+        }
+    }
+
+
+    fun querySpecialSQL(logInfo: LogInfo, t:String, sql:String){
+        context.database.use {
+            select(table, "*")
+                    //select(table, "package", "title")
+                    .exec {
+                        println("$table:$count:$columnCount")
+                        if (count > 0) {
+                            parseList(object : MapRowParser<Map<String, Any?>> {
+                                override fun parseRow(columns: Map<String, Any?>): Map<String, Any?> {
+                                    //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+                                    println("query $table:$count ${columns.toString()}")
+
+                                    return columns
+                                }
+                            })
+                        }
+                    }
+
+        }
+    }
+
 
 
     val db: MySqlHelper

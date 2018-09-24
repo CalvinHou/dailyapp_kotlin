@@ -16,10 +16,7 @@ import java.lang.Exception
 import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
 import daily.topapp.com.daily_topapp.db.AppsDb
-import daily.topapp.com.daily_topapp.utils.LogInfo
-import daily.topapp.com.daily_topapp.utils.checkFileName
-import daily.topapp.com.daily_topapp.utils.getFormatDate
-import daily.topapp.com.daily_topapp.utils.isNumeric
+import daily.topapp.com.daily_topapp.utils.*
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
@@ -28,14 +25,6 @@ import java.util.concurrent.TimeUnit
  */
 
 class ParseApps {
-
-    val APP_PATH = "/sdcard/daily_app/"
-    val HTTPHEAD = "https:"
-    val BASEURL = HTTPHEAD + "//play.google.com"
-    val BASECATEGORY = BASEURL + "/store/apps/category/"
-
-    val BASE_DEV = "https://play.google.com/store/apps/developer?id="
-
     var topCategoryNameLists = listOf(
             "PERSONALIZATION", "MUSIC_AND_AUDIO", "COMMUNICATION", "PRODUCTIVITY", "ENTERTAINMENT", "TOOLS", "SOCIAL"
     )
@@ -244,7 +233,7 @@ class ParseApps {
 
 
     /*
-    fun getFormatDate():String {
+    fun getTodayFormatDate():String {
         val current = Date(System.currentTimeMillis())
         val name = "${current.year + 1900}-${current.month + 1}-${current.date}"
 
@@ -333,7 +322,7 @@ class ParseApps {
                 var title = checkFileName(i.title.trim())
                 var p = path
                 if (p.length <= 0)  {
-                    p = getIconPath(getAppPath(i.category), getFormatDate())
+                    p = getIconPath(getAppPath(i.category), getTodayFormatDate())
                 }
                 var file = File("${p}/${rank}_$title.jpeg")
 
@@ -416,7 +405,7 @@ class ParseApps {
 
                 if (response?.code() == 404) {
                     if (db.updateAppSuspend(i)) {
-                        log.print("suspend app ${title}:$link")
+                        log.print("suspend app ${title}:[${company}]:$link")
                         found++
                     }
                 }
@@ -434,7 +423,8 @@ class ParseApps {
 
 
     fun getAppPath(category: String):String {
-        return  "$APP_PATH/${getAppDirectory(category)}/"
+        var c = checkFileName(category)
+        return  "$APP_PATH/${getAppDirectory(c)}/"
     }
 
     fun getAppIconChangedPath():String {
@@ -448,7 +438,7 @@ class ParseApps {
 
 
     fun getJsonFile(path:String):String {
-        return "$path/app-${getFormatDate()}.json"
+        return "$path/app-${getTodayFormatDate()}.json"
     }
 
 }

@@ -21,7 +21,6 @@ class EntryActivity : AppCompatActivity() {
             }
         })
 
-
         val btMy:Button = findViewById(R.id.buttonmy)
         btMy?.setOnClickListener(object: View.OnClickListener{
             override fun onClick(v: View?) {
@@ -31,22 +30,53 @@ class EntryActivity : AppCompatActivity() {
         })
 
 
-        val btnOther:Button = findViewById(R.id.buttonother)
+        val btnOther:Button = findViewById(R.id.button_personal_new)
         btnOther.setOnClickListener(object : View.OnClickListener{
             override fun onClick(v: View?) {
-                var intent = Intent(applicationContext, OtherDeveloperActivity::class.java)
+                var intent = Intent(applicationContext, DevelopersCheckActivity::class.java)
+                intent.putExtra("check_type", "personalization_new")
                 startActivity(intent)
             }
         })
 
+
+        val btnAllNew:Button = findViewById(R.id.button_all_new)
+        btnAllNew.setOnClickListener(object : View.OnClickListener{
+            override fun onClick(v: View?) {
+                var intent = Intent(applicationContext, DevelopersCheckActivity::class.java)
+                intent.putExtra("check_type", "_new")
+                startActivity(intent)
+            }
+        })
+
+
+        val btnAllDev:Button = findViewById(R.id.button_alldevelopers)
+        btnAllDev.setOnClickListener(object : View.OnClickListener{
+            override fun onClick(v: View?) {
+                var intent = Intent(applicationContext, DevelopersCheckActivity::class.java)
+                intent.putExtra("check_type", "all")
+                startActivity(intent)
+            }
+        })
 
         val btnSuspend:Button = findViewById(R.id.buttonsuspend)
         btnSuspend.setOnClickListener(object : View.OnClickListener{
             override fun onClick(v: View?) {
                 var intent = Intent(applicationContext, SuspendCheckActivity::class.java)
+                intent.putExtra("check_type", "all")
                 startActivity(intent)
             }
         })
+
+        val btnSuspendOther:Button = findViewById(R.id.buttonsuspend_other)
+        btnSuspendOther.setOnClickListener(object : View.OnClickListener{
+            override fun onClick(v: View?) {
+                var intent = Intent(applicationContext, SuspendCheckActivity::class.java)
+                intent.putExtra("check_type", "other")
+                startActivity(intent)
+            }
+        })
+
 
         val btnDownIons:Button = findViewById(R.id.buttondownloadicon)
         btnDownIons.setOnClickListener(object : View.OnClickListener{

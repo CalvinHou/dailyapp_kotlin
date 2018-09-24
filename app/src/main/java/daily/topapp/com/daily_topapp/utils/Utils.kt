@@ -13,6 +13,14 @@ import java.util.regex.Pattern
  */
 
 
+val APP_PATH = "/sdcard/daily_app/"
+val HTTPHEAD = "https:"
+val BASEURL = HTTPHEAD + "//play.google.com"
+val BASECATEGORY = BASEURL + "/store/apps/category/"
+
+val BASE_DEV = "https://play.google.com/store/apps/developer?id="
+
+
 fun getFormatMonth():String {
     val current = Date(System.currentTimeMillis())
     val name = "${current.year + 1900}-${current.month + 1}"
@@ -21,7 +29,7 @@ fun getFormatMonth():String {
 }
 
 
-fun getFormatDate():String {
+fun getTodayFormatDate():String {
     val current = Date(System.currentTimeMillis())
     val name = "${current.year + 1900}-${current.month + 1}-${current.date}"
 
@@ -84,47 +92,69 @@ fun isNumeric(str: String): Boolean {
     return pattern.matcher(str).matches()
 }
 
-fun resolveApps(parse: ParseApps, log: LogInfo, db: AppsDb, topLists:MutableList<Category>) {
+fun resolveApps(parse: ParseApps, log: LogInfo, db: AppsDb, topLists:MutableList<Category>, writeDb:Boolean = true) {
     parse?.run {
         //var topLists= initOtherDeveloperList()
 
         log.file = APP_PATH + "/appchange_log.txt"
 
         var cc = 0
+        var index = 0
+        var suspendDevCC = 0
         for (i in topLists) {
 
-            val content = getTopApps(i.url)
-            var list = parseApps(content)
+            i?.run {
+                if (db.isCategorySuspend(i) == false) {
 
-            var appContent = "\n"
+                    val content = getTopApps(url)
+                    var list = parseApps(content)
 
-            for (j in list.indices) {
-                list[j].run {
-                    category = i.name
-                    appContent += "$rank:$title\n$desc\n$link\n$company\n$company_link\n${iconurl[0]}\n"
+                    var appContent = "\n"
+
+                    for (j in list.indices) {
+                        list[j].run {
+                            category = name
+                            appContent += " $index:\n $rank:$title\n$desc\n$link\n$company\n$company_link\n${iconurl[0]}\n"
+                        }
+                    }
+
+                    db.updateCategoryInfo(i)
+
+                    if (appContent.length < 10) {
+                        log.print("${suspendDevCC++}: suspend:${name}:${url}")
+                        i.status = "suspend"
+                        db.updateCategoryInfo(i)
+                    }
+
+                    createCacheDir(APP_PATH) // for app
+                    var appPath = getAppPath(name)
+                    createCacheDir(appPath)
+                    createCacheDir(APP_PATH + "/icon_changed/") // for app
+
+                    var iconPath = getIconPath(appPath, getTodayFormatDate())
+                    //var iconPath = getIconPath(appPath, getFormatMonth())
+                    createCacheDir(iconPath) // for icon
+
+                    val name = getJsonFile(appPath)
+                    saveAppsToJson(list, name)
+
+                    path = iconPath
+
+                    if (writeDb == true) {
+                        db.updateAppChangelogAppinfoList(list, name) //first check changelog of title/desc/company
+                        db.updateAppsByAppinfoList(list, name)
+                    }
+
+                    log.printonlyhandler(appContent)
+
+                    cc += list.size
+                    index++
+
+                }
+                else {
+                    log.print("${suspendDevCC++}: suspend:${name}:${url}")
                 }
             }
-
-            createCacheDir(APP_PATH) // for app
-            var appPath = getAppPath(i.name)
-            createCacheDir(appPath)
-            createCacheDir(APP_PATH + "/icon_changed/") // for app
-
-            var iconPath = getIconPath(appPath, getFormatDate())
-            //var iconPath = getIconPath(appPath, getFormatMonth())
-            createCacheDir(iconPath) // for icon
-
-            val name = getJsonFile(appPath)
-            saveAppsToJson(list, name)
-
-            i.path = iconPath
-
-            db.updateAppChangelogAppinfoList(list, i.name) //first check changelog of title/desc/company
-            db.updateAppsByAppinfoList(list, i.name)
-
-            log.printonlyhandler(appContent)
-
-            cc += list.size
         }
 
         Thread.sleep(1000 * 5)
@@ -132,19 +162,21 @@ fun resolveApps(parse: ParseApps, log: LogInfo, db: AppsDb, topLists:MutableList
         Thread.sleep(1000 * 5)
         log.print("")
 
-        /*
-        for (i in topLists) {
-            Thread(Runnable {
-                i?.run {
-                    downloadIconsTask(apps, path, db, log)
-                    checkAppSuspendTask(apps, db, log)
-                }
-            }).start()
-        }
-        */
 
     }
 }
+
+
+/*
+for (i in topLists) {
+    Thread(Runnable {
+        i?.run {
+            downloadIconsTask(apps, path, db, log)
+            checkAppSuspendTask(apps, db, log)
+        }
+    }).start()
+}
+*/
 
 
 

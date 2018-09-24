@@ -7,7 +7,8 @@ import android.widget.TextView
 import daily.topapp.com.daily_topapp.*
 import daily.topapp.com.daily_topapp.data.ParseApps
 import daily.topapp.com.daily_topapp.db.AppsDb
-import daily.topapp.com.daily_topapp.utils.getFormatDate
+import daily.topapp.com.daily_topapp.utils.APP_PATH
+import daily.topapp.com.daily_topapp.utils.getTodayFormatDate
 import daily.topapp.com.daily_topapp.utils.log
 
 
@@ -59,7 +60,7 @@ class AllAppsActivity : AppCompatActivity() {
                     createCacheDir(appPath)
                     createCacheDir(APP_PATH + "/icon_changed/") // for app
 
-                    var iconPath = getIconPath(appPath, getFormatDate())
+                    var iconPath = getIconPath(appPath, getTodayFormatDate())
                     //var iconPath = getIconPath(appPath, getFormatMonth())
                     createCacheDir(iconPath) // for icon
 

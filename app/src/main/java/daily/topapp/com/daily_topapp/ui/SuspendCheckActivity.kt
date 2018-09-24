@@ -33,7 +33,13 @@ class SuspendCheckActivity : AppCompatActivity() {
             db.initDb()
             //db.destoryDb()
 
-            parse?.checkAppSuspendTask(db.queryOldAppList(), db, log) // check all suspend all on today...
+
+            if (intent.getStringExtra("check_type").equals( "other")) {
+                parse?.checkAppSuspendTask(db.queryOtherDevelopAppList(), db, log) // check all suspend all on today...
+            }
+            else {
+                parse?.checkAppSuspendTask(db.queryOldAppList(), db, log) // check all suspend all on today...
+            }
 
         }).start()
 

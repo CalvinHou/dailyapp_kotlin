@@ -28,9 +28,26 @@
             />
 
         <Button
-            android:id="@+id/buttonother"
+            android:id="@+id/button_personal_new"
             android:layout_height="wrap_content"
-            android:text="Other Themes"
+            android:text="Personal new developers"
+            android:layout_width="match_parent"
+            android:layout_marginTop="30.0dp"
+            />
+
+        <Button
+            android:id="@+id/button_all_new"
+            android:layout_height="wrap_content"
+            android:text="All new developers"
+            android:layout_width="match_parent"
+            android:layout_marginTop="30.0dp"
+            />
+
+
+        <Button
+            android:id="@+id/button_alldevelopers"
+            android:layout_height="wrap_content"
+            android:text="All Developers"
             android:layout_width="match_parent"
             android:layout_marginTop="30.0dp"
             />
@@ -39,6 +56,14 @@
             android:id="@+id/buttonsuspend"
             android:layout_height="wrap_content"
             android:text="Check app suspend"
+            android:layout_width="match_parent"
+            android:layout_marginTop="30.0dp"
+            />
+
+        <Button
+            android:id="@+id/buttonsuspend_other"
+            android:layout_height="wrap_content"
+            android:text="Check other app suspend"
             android:layout_width="match_parent"
             android:layout_marginTop="30.0dp"
             />
