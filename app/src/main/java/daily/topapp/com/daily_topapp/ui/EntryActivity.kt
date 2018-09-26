@@ -5,7 +5,13 @@ import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
+import android.widget.Toast
 import daily.topapp.com.daily_topapp.R
+import daily.topapp.com.daily_topapp.data.ParseApps
+import daily.topapp.com.daily_topapp.utils.APP_PATH
+import daily.topapp.com.daily_topapp.utils.dumpDbFile
+import daily.topapp.com.daily_topapp.utils.getListFiles
+import java.io.File
 
 class EntryActivity : AppCompatActivity() {
 
@@ -85,6 +91,20 @@ class EntryActivity : AppCompatActivity() {
                 startActivity(intent)
             }
         })
+
+        val btnDumpDb:Button = findViewById(R.id.buttondumpdb)
+        btnDumpDb.setOnClickListener(object : View.OnClickListener{
+            override fun onClick(v: View?) {
+                val ctx = applicationContext // for Activity, or Service. Otherwise simply get the context.
+                val dbname = "topapp_rank"
+                val dbfile = ctx.getDatabasePath(dbname)
+                //var file = File("/data/user/0/daily.topapp.com.daily_topapp/databases/")
+                //var list = getListFiles(file)
+                dumpDbFile(dbfile, APP_PATH + "/$dbname")
+                Toast.makeText(applicationContext, "copy db file ok!", 1000).show()
+            }
+        })
+
 
     }
 }

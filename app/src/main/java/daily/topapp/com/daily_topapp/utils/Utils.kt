@@ -1,5 +1,6 @@
 package daily.topapp.com.daily_topapp.utils
 
+import android.util.Log
 import daily.topapp.com.daily_topapp.data.ParseApps
 import daily.topapp.com.daily_topapp.data.Category
 import daily.topapp.com.daily_topapp.db.AppsDb
@@ -7,6 +8,15 @@ import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.util.*
 import java.util.regex.Pattern
+import android.widget.Toast
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.io.IOException
+import java.util.Arrays.asList
+
+
+
 
 /**
  * Created by houhuihua on 2018/8/23.
@@ -90,6 +100,52 @@ fun checkFileName(title:String):String {
 fun isNumeric(str: String): Boolean {
     val pattern = Pattern.compile("[0-9]*")
     return pattern.matcher(str).matches()
+}
+
+fun dumpDbFile(dbfile:File, outfile:String) {
+    val f =  dbfile
+    var fis: FileInputStream? = null
+    var fos: FileOutputStream? = null
+
+    var buf = ByteArray(1024 * 512)
+    var cc = 0
+    try {
+        fis = FileInputStream(f)
+        fos = FileOutputStream(outfile)
+        while (true) {
+            val i = fis!!.read(buf)
+            if (i != -1) {
+                fos!!.write(buf)
+                Log.e("copyfile", "${cc++}")
+            } else {
+                break
+            }
+        }
+        fos!!.flush()
+    } catch (e: Exception) {
+        e.printStackTrace()
+    } finally {
+        try {
+            fos!!.close()
+            fis!!.close()
+        } catch (ioe: IOException) {
+        }
+
+    }
+}
+
+
+fun getListFiles(parentDir: File): List<File> {
+    val inFiles = ArrayList<File>()
+    val files = parentDir.listFiles()
+    for (file in files!!) {
+        if (file.isDirectory) {
+            inFiles.addAll(getListFiles(file))
+        } else {
+            inFiles.add(file)
+        }
+    }
+    return inFiles
 }
 
 fun resolveApps(parse: ParseApps, log: LogInfo, db: AppsDb, topLists:MutableList<Category>, writeDb:Boolean = true) {

@@ -76,5 +76,13 @@
             android:layout_marginTop="30.0dp"
             />
 
+        <Button
+            android:id="@+id/buttondumpdb"
+            android:layout_height="wrap_content"
+            android:text="Dump db file"
+            android:layout_width="match_parent"
+            android:layout_marginTop="30.0dp"
+            />
+
     </LinearLayout>
 </android.support.constraint.ConstraintLayout>
