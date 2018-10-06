@@ -148,7 +148,7 @@ fun getListFiles(parentDir: File): List<File> {
     return inFiles
 }
 
-fun resolveApps(parse: ParseApps, log: LogInfo, db: AppsDb, topLists:MutableList<Category>, writeDb:Boolean = true) {
+fun resolveApps(parse: ParseApps, log: LogInfo, db: AppsDb, topLists:MutableList<Category>, writeDb:Boolean = true, force:Boolean = false) {
     parse?.run {
         //var topLists= initOtherDeveloperList()
 
@@ -160,7 +160,7 @@ fun resolveApps(parse: ParseApps, log: LogInfo, db: AppsDb, topLists:MutableList
         for (i in topLists) {
 
             i?.run {
-                if (db.isCategorySuspend(i) == false) {
+                if (db.isCategorySuspend(i) == false || force == true) {
 
                     val content = getTopApps(url)
                     var list = parseApps(content)
@@ -170,7 +170,7 @@ fun resolveApps(parse: ParseApps, log: LogInfo, db: AppsDb, topLists:MutableList
                     for (j in list.indices) {
                         list[j].run {
                             category = name
-                            appContent += " $index:\n $rank:$title\n$desc\n$link\n$company\n$company_link\n${iconurl[0]}\n"
+                            appContent += " $index/${topLists.size}:\n $rank:$title\n$desc\n$link\n$company\n$company_link\n${iconurl[0]}\n"
                         }
                     }
 

@@ -609,14 +609,13 @@ class AppsDb(var context: Context) {
         context.database.use {
             select(category, "*")
                     //select(table, "package", "title")
-                    .whereSimple("date != ?", getTodayFormatDate())
+                    .whereSimple("date != ? and status != ?", getTodayFormatDate(), "suspend")
                     .exec {
-                        println("$table:$count:$columnCount")
                         if (count > 0) {
                             parseList(object : MapRowParser<Map<String, Any?>> {
                                 override fun parseRow(columns: Map<String, Any?>): Map<String, Any?> {
                                     //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-                                    println("query $table:$count ${columns.toString()}")
+                                    println("query $category:$count ${columns.toString()}")
                                     //addCategory(list, columns)
                                     val name = columns.get("category") as String
                                     val url = columns.get("url") as String

@@ -389,6 +389,7 @@ class ParseApps {
         //var error = "We're sorry, the requested URL was not found on this server."
 
         var found = 0
+        var cc = 0
         for (i in listApp) {
             i?.run {
                 val request = Request.Builder()
@@ -410,8 +411,9 @@ class ParseApps {
                     }
                 }
                 else {
-                    log.printnosave("${response?.code()} len: ${response?.body()?.contentLength()}${i.rank}: ${i.title} ${i.link} ok.")
+                    log.printnosave("$cc/${listApp.size}:\n ${response?.code()} len: ${response?.body()?.contentLength()}${i.rank}: ${i.title} ${i.link} ok.")
                 }
+                cc++
             }
         }
 

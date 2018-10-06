@@ -32,7 +32,7 @@ class MyDeveloper : AppCompatActivity() {
             db.initDb()
             //db.destoryDb()
 
-            resolveApps(parse, log, db, parse.initMyDeveloperList())
+            resolveApps(parse, log, db, parse.initMyDeveloperList(), true, true)
 
         }).start()
 
